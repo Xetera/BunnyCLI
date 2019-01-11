@@ -6,12 +6,6 @@ defmodule Downloader do
   @file_name "ObjectName"
   #  @expected_fields ~w( ObjectName )
 
-  def get_filename(url) do
-    url
-    |> String.split("/")
-    |> List.last
-  end
-
   def get_endpoint(endpoint, decode \\ true) do
     case HTTPoison.get(endpoint, Config.headers) do
       { :ok, res } -> decode && Poison.decode! res.body || res.body
@@ -20,9 +14,8 @@ defmodule Downloader do
   end
 
   def count_files(path \\ Config.base_endpoint) do
-    amount = get_endpoint(path)
-             |> Enum.count
-    "#{amount} files found in #{path}"
+    get_endpoint(path)
+    |> Enum.count
   end
 
   def list_files(path \\ Config.base_endpoint, limit \\ 10) do
@@ -32,7 +25,7 @@ defmodule Downloader do
   end
 
   def write_file(resp) do
-    name = get_filename(resp.request_url)
+    name = Utils.get_filename(resp.request_url)
     File.write(name, resp.body)
   end
 
@@ -41,9 +34,12 @@ defmodule Downloader do
     target = Config.base_endpoint
              |> URI.merge(path)
              |> URI.to_string()
-    #    get_endpoint(target, false)
-    case HTTPoison.get(target, Config.headers) do
-      { :ok, res } -> write_file(res)
+    opts = [text: "Downloading from #{target}...", done: 'Done']
+    run = fn ->
+      case HTTPoison.get(target, Config.headers) do
+        { :ok, res } -> write_file(res)
+      end
     end
+    ProgressBar.render_spinner(opts, run)
   end
 end

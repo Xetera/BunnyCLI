@@ -6,9 +6,16 @@ defmodule Config do
 
   @base_endpoint "https://storage.bunnycdn.com/#{@storage}/"
 
+  def access_key, do: System.get_env("AccessKey")
+  def redirect, do: System.get_env("bunny_url")
+
+  def has_key do
+    access_key != nil
+  end
+
   def headers do
     [
-      { "AccessKey", System.get_env("AccessKey") },
+      { "AccessKey", access_key },
       { "Accept", "application/json" },
       { "User-Agent", "BunnyCLI Client" }
     ]
